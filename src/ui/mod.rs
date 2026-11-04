@@ -82,10 +82,25 @@ pub fn draw(frame: &mut Frame, app: &App, theme: &Theme) {
 
     if app.show_help() {
         let overlay = centered(area, 50, 22);
-        // Clear first: the overlay is opaque, and bars showing through it
-        // would make the text unreadable.
-        frame.render_widget(Clear, overlay);
+        // Clear a column either side as well as the box itself. Without the
+        // gutter the border sits flush against whatever is behind it, and
+        // `┌ keys ─┐le sort` reads as corruption rather than as a panel
+        // floating above the chart.
+        frame.render_widget(Clear, with_gutter(overlay, area));
         frame.render_widget(panel::help(theme), overlay);
+    }
+}
+
+/// Widen a rect by one column on each side, clamped to `bounds`.
+fn with_gutter(rect: Rect, bounds: Rect) -> Rect {
+    let left = rect.x.saturating_sub(1).max(bounds.x);
+    let right = rect.x.saturating_add(rect.width).saturating_add(1);
+    let right = right.min(bounds.x.saturating_add(bounds.width));
+    Rect {
+        x: left,
+        y: rect.y,
+        width: right.saturating_sub(left),
+        height: rect.height,
     }
 }
 
