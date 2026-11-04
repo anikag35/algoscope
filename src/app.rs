@@ -13,7 +13,7 @@ use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 
 use crate::algo::Playback;
-use crate::algo::sort::Algorithm;
+use crate::algo::sort::{Algorithm, SortStep};
 
 pub const MIN_SIZE: usize = 4;
 pub const MAX_SIZE: usize = 512;
@@ -37,7 +37,7 @@ const DEFAULT_SPEED: usize = 2;
 const STEP_BUDGET: usize = 50_000;
 
 pub struct App {
-    playback: Playback,
+    playback: Playback<SortStep>,
     algorithm: Algorithm,
     size: usize,
     seed: u64,
@@ -67,7 +67,7 @@ impl App {
         }
     }
 
-    pub fn playback(&self) -> &Playback {
+    pub fn playback(&self) -> &Playback<SortStep> {
         &self.playback
     }
 
@@ -375,7 +375,7 @@ mod tests {
 
         assert!(app.playback().at_end());
         assert!(!app.playing(), "finishing should pause, not loop");
-        assert!(app.playback().frame().is_sorted());
+        assert!(app.playback().state().is_sorted());
     }
 
     #[test]
@@ -392,12 +392,12 @@ mod tests {
     #[test]
     fn switching_algorithm_keeps_the_array() {
         let mut app = app();
-        let before = app.playback().trace().initial.clone();
+        let before = app.playback().trace().initial.values.clone();
 
         app.handle_key(press(KeyCode::Tab));
         assert_eq!(app.algorithm(), Algorithm::Insertion);
         assert_eq!(
-            app.playback().trace().initial,
+            app.playback().trace().initial.values,
             before,
             "the input must be held fixed so the counters stay comparable"
         );
@@ -407,10 +407,10 @@ mod tests {
     fn shuffling_changes_the_array_and_rewinds() {
         let mut app = app();
         app.handle_key(press(KeyCode::End));
-        let before = app.playback().trace().initial.clone();
+        let before = app.playback().trace().initial.values.clone();
 
         app.handle_key(press(KeyCode::Char('r')));
-        assert_ne!(app.playback().trace().initial, before);
+        assert_ne!(app.playback().trace().initial.values, before);
         assert!(app.playback().at_start());
     }
 

@@ -1,6 +1,9 @@
 //! Algorithms, and the tracing model they record into.
+//!
+//! [`trace`] is generic over the step type; [`sort`] and [`grid`] supply the
+//! concrete steps and state for their own domains.
 
 pub mod sort;
-pub mod step;
+pub mod trace;
 
-pub use step::{Complexity, Frame, Playback, Step, Trace, Tracer};
+pub use trace::{Complexity, Playback, Step, Trace};

@@ -5,8 +5,8 @@
 //! direction without drifting. If `round_trip` ever fails, scrubbing backwards
 //! in the app is silently corrupting the array.
 
-use algoscope::algo::sort::Algorithm;
-use algoscope::algo::{Frame, Playback};
+use algoscope::algo::Playback;
+use algoscope::algo::sort::{Algorithm, SortState};
 use proptest::prelude::*;
 
 /// Compare the parts of a frame that must be exact.
@@ -14,7 +14,7 @@ use proptest::prelude::*;
 /// `active` is excluded on purpose: it is the highlight, and stepping backwards
 /// deliberately clears it rather than keeping a stack of previous highlights
 /// around to restore. Everything else has to match to the bit.
-fn assert_state_eq(left: &Frame, right: &Frame, ctx: &str) {
+fn assert_state_eq(left: &SortState, right: &SortState, ctx: &str) {
     assert_eq!(left.values, right.values, "values differ {ctx}");
     assert_eq!(left.sorted, right.sorted, "sorted flags differ {ctx}");
     assert_eq!(
@@ -36,12 +36,12 @@ proptest! {
 
         for algorithm in Algorithm::ALL {
             let trace = algorithm.run(input.clone());
-            let frame = trace.frame_at(trace.len());
+            let state = trace.state_at(trace.len());
 
-            prop_assert_eq!(&frame.values, &want, "{} mis-sorted", trace.name);
-            prop_assert!(frame.is_sorted(), "{} left disorder", trace.name);
+            prop_assert_eq!(&state.values, &want, "{} mis-sorted", trace.name);
+            prop_assert!(state.is_sorted(), "{} left disorder", trace.name);
             prop_assert!(
-                frame.sorted.iter().all(|&s| s),
+                state.sorted.iter().all(|&s| s),
                 "{} left slots unmarked",
                 trace.name
             );
@@ -58,7 +58,7 @@ proptest! {
     fn round_trip(input in prop::collection::vec(0u32..8, 0..48)) {
         for algorithm in Algorithm::ALL {
             let trace = algorithm.run(input.clone());
-            let start = Frame::new(trace.initial.clone());
+            let start = trace.initial.clone();
             let name = trace.name;
             let mut playback = Playback::new(trace);
 
@@ -68,7 +68,7 @@ proptest! {
             while playback.step_back() {}
             prop_assert!(playback.at_start(), "{name} did not reach the start");
 
-            assert_state_eq(playback.frame(), &start, &format!("after rewinding {name}"));
+            assert_state_eq(playback.state(), &start, &format!("after rewinding {name}"));
         }
     }
 
@@ -88,18 +88,18 @@ proptest! {
             let trace = algorithm.run(input.clone());
             let name = trace.name;
             let target = (probe * trace.len() as f64) as usize;
-            let expected = trace.frame_at(target);
+            let expected = trace.state_at(target);
 
             let mut forward = Playback::new(trace.clone());
             forward.seek(target);
             prop_assert_eq!(forward.cursor(), target);
-            assert_state_eq(forward.frame(), &expected, &format!("seeking up in {name}"));
+            assert_state_eq(forward.state(), &expected, &format!("seeking up in {name}"));
 
             let mut backward = Playback::new(trace);
             backward.fast_forward();
             backward.seek(target);
             prop_assert_eq!(backward.cursor(), target);
-            assert_state_eq(backward.frame(), &expected, &format!("seeking down in {name}"));
+            assert_state_eq(backward.state(), &expected, &format!("seeking down in {name}"));
         }
     }
 }

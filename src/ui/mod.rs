@@ -72,7 +72,7 @@ pub fn draw(frame: &mut Frame, app: &App, theme: &Theme) {
         content
     };
 
-    frame.render_widget(Bars::new(app.playback().frame(), theme), chart);
+    frame.render_widget(Bars::new(app.playback().state(), theme), chart);
 
     if show_scrubber {
         frame.render_widget(Scrubber::new(app.playback().progress(), theme), rows[1]);

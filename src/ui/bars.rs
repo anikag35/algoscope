@@ -10,25 +10,25 @@ use ratatui::layout::Rect;
 use ratatui::widgets::Widget;
 
 use super::theme::{BarState, Theme};
-use crate::algo::Frame;
+use crate::algo::sort::SortState;
 
-/// Bar chart of a [`Frame`]'s array.
+/// Bar chart of a [`SortState`]'s array.
 pub struct Bars<'a> {
-    frame: &'a Frame,
+    state: &'a SortState,
     theme: &'a Theme,
 }
 
 impl<'a> Bars<'a> {
-    pub fn new(frame: &'a Frame, theme: &'a Theme) -> Self {
-        Self { frame, theme }
+    pub fn new(state: &'a SortState, theme: &'a Theme) -> Self {
+        Self { state, theme }
     }
 
     fn state_of(&self, idx: usize) -> BarState {
         // `active` holds at most two entries, so the scan is cheaper than the
         // set it would take to avoid it.
-        if self.frame.active.contains(&idx) {
+        if self.state.active.contains(&idx) {
             BarState::Active
-        } else if self.frame.sorted[idx] {
+        } else if self.state.sorted[idx] {
             BarState::Sorted
         } else {
             BarState::Idle
@@ -38,14 +38,14 @@ impl<'a> Bars<'a> {
 
 impl Widget for Bars<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let n = self.frame.values.len();
+        let n = self.state.values.len();
         let width = area.width as usize;
         let height = area.height as usize;
         if n == 0 || width == 0 || height == 0 {
             return;
         }
 
-        let max = self.frame.values.iter().copied().max().unwrap_or(0);
+        let max = self.state.values.iter().copied().max().unwrap_or(0);
 
         // `idx = col * n / width` maps columns to values in both directions at
         // once: with room to spare, consecutive columns land on the same value
@@ -64,7 +64,7 @@ impl Widget for Bars<'_> {
                 continue;
             }
 
-            let value = self.frame.values[idx];
+            let value = self.state.values[idx];
             let style = self.theme.bar(value, max, self.state_of(idx));
             let eighths = fill_eighths(value, max, height);
             let x = area.x + col as u16;
@@ -104,15 +104,15 @@ mod tests {
     use ratatui::layout::Rect;
 
     use super::*;
-    use crate::algo::Frame;
+    use crate::algo::sort::SortState;
     use crate::ui::theme::Theme;
 
     fn render(values: Vec<u32>, width: u16, height: u16) -> Buffer {
-        let frame = Frame::new(values);
+        let state = SortState::new(values);
         let theme = Theme::minimal();
         let area = Rect::new(0, 0, width, height);
         let mut buf = Buffer::empty(area);
-        Bars::new(&frame, &theme).render(area, &mut buf);
+        Bars::new(&state, &theme).render(area, &mut buf);
         buf
     }
 

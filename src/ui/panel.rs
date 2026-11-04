@@ -16,7 +16,7 @@ use crate::app::App;
 /// The metrics sidebar.
 pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
     let playback = app.playback();
-    let frame = playback.frame();
+    let state = playback.state();
     let trace = playback.trace();
     let complexity = &trace.complexity;
     let n = app.size();
@@ -37,15 +37,15 @@ pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
         lines.push(field(label, &theme.text(value), theme));
     }
     lines.push(field(
-        "stable",
-        if complexity.stable { "yes" } else { "no" },
+        "notes",
+        &theme.text(complexity.note),
         theme,
     ));
 
     lines.push(Line::default());
     lines.push(heading("WORK DONE", theme));
-    lines.push(field("comparisons", &commas(frame.comparisons), theme));
-    lines.push(field("writes", &commas(frame.writes), theme));
+    lines.push(field("comparisons", &commas(state.comparisons), theme));
+    lines.push(field("writes", &commas(state.writes), theme));
     lines.push(field(
         "step",
         &format!(
@@ -271,6 +271,6 @@ mod tests {
         use crate::algo::sort;
         let n = 24;
         let trace = sort::selection((1..=n as u32).rev().collect());
-        assert_eq!(trace.frame_at(trace.len()).comparisons, pairs(n));
+        assert_eq!(trace.state_at(trace.len()).comparisons, pairs(n));
     }
 }
