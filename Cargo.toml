@@ -1,0 +1,23 @@
+[package]
+name = "algoscope"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "An interactive terminal visualizer for sorting and pathfinding algorithms, with step-through controls and live complexity annotations."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["algorithms", "tui", "visualizer", "sorting", "ratatui"]
+categories = ["command-line-utilities", "visualization", "algorithms"]
+exclude = ["/assets", "/.github", "/demo.tape"]
+
+[dependencies]
+crossterm = "0.29.0"
+rand = "0.10.3"
+ratatui = "0.30.2"
+
+[dev-dependencies]
+proptest = "1.12.0"
+
+[profile.release]
+lto = true
+strip = true
