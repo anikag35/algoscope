@@ -13,6 +13,8 @@
 //! genuinely cheapest one, and they are not the same route.
 
 
+pub mod search;
+
 use rand::rngs::StdRng;
 use rand::seq::IndexedRandom;
 use rand::{RngExt, SeedableRng};
