@@ -6,3 +6,4 @@
 
 pub mod algo;
 pub mod app;
+pub mod ui;
