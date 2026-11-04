@@ -5,3 +5,4 @@
 //! reused to drive any other front end.
 
 pub mod algo;
+pub mod app;
