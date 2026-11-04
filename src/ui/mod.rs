@@ -6,6 +6,7 @@
 //! array to fit the terminal, so a resize mid-run never disturbs the sort.
 
 pub mod bars;
+pub mod grid;
 pub mod panel;
 pub mod theme;
 

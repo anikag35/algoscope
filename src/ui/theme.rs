@@ -18,6 +18,8 @@ use std::env;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::symbols::border;
 
+use crate::algo::grid::{Status, Terrain};
+
 /// How much colour the terminal can show.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ColorDepth {
@@ -40,6 +42,14 @@ pub enum BarState {
     Active,
     /// Settled by the algorithm.
     Sorted,
+}
+
+/// What a grid cell is, where that overrides its terrain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellRole {
+    Plain,
+    Start,
+    Goal,
 }
 
 /// Vertical eighth-blocks, indexed by eighths filled.
@@ -178,6 +188,96 @@ impl Theme {
         }
     }
 
+    /// The two-column glyph pair and style for one grid cell.
+    ///
+    /// Cells are two columns wide so that they read as roughly square: a
+    /// terminal cell is about twice as tall as it is wide, so one column per
+    /// grid cell would render every map squashed horizontally.
+    ///
+    /// Where there is colour, both columns carry the terrain glyph and the
+    /// colour carries the search status — so a rough cell stays visibly rough
+    /// even after the frontier has passed over it, which is what shows *why*
+    /// Dijkstra routed around it. With no colour available that trick is gone,
+    /// so the second column becomes a status marker instead; terrain in the
+    /// first column, progress in the second.
+    pub fn grid_cell(
+        &self,
+        terrain: Terrain,
+        status: Status,
+        role: CellRole,
+    ) -> ([char; 2], Style) {
+        let base = match role {
+            CellRole::Start => 'S',
+            CellRole::Goal => 'G',
+            CellRole::Plain => match terrain {
+                Terrain::Wall => if self.unicode { '\u{2588}' } else { '#' },
+                Terrain::Rough => if self.unicode { '\u{2592}' } else { ':' },
+                Terrain::Open => if self.unicode { '\u{00b7}' } else { '.' },
+            },
+        };
+
+        let glyphs = if self.depth == ColorDepth::Mono {
+            [base, status_marker(status)]
+        } else if role == CellRole::Plain {
+            [base, base]
+        } else {
+            [base, ' ']
+        };
+
+        (glyphs, self.grid_style(terrain, status))
+    }
+
+    fn grid_style(&self, terrain: Terrain, status: Status) -> Style {
+        match self.depth {
+            // Glyphs carry the state here, so only the untouched map is
+            // pushed into the background.
+            ColorDepth::Mono => match status {
+                Status::Unseen => Style::new().add_modifier(Modifier::DIM),
+                Status::Path => Style::new().add_modifier(Modifier::BOLD),
+                _ => Style::new(),
+            },
+            ColorDepth::Ansi16 => {
+                let color = match status {
+                    Status::Unseen => match terrain {
+                        Terrain::Wall | Terrain::Open => Color::DarkGray,
+                        Terrain::Rough => Color::Yellow,
+                    },
+                    Status::Frontier => Color::Cyan,
+                    Status::Expanding => Color::Yellow,
+                    Status::Settled => Color::Blue,
+                    Status::Path => Color::Green,
+                };
+                let mut style = Style::new().fg(color);
+                if matches!(status, Status::Path | Status::Expanding) {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                // Walls stay solid; open and rough ground recede.
+                if status == Status::Unseen && terrain != Terrain::Wall {
+                    style = style.add_modifier(Modifier::DIM);
+                }
+                style
+            }
+            ColorDepth::Full => {
+                let color = match status {
+                    Status::Unseen => match terrain {
+                        Terrain::Wall => Color::Rgb(76, 80, 92),
+                        Terrain::Rough => Color::Rgb(124, 100, 58),
+                        Terrain::Open => Color::Rgb(54, 58, 68),
+                    },
+                    Status::Frontier => Color::Rgb(110, 200, 225),
+                    Status::Expanding => Color::Rgb(240, 186, 70),
+                    Status::Settled => Color::Rgb(72, 104, 140),
+                    Status::Path => Color::Rgb(96, 206, 132),
+                };
+                let mut style = Style::new().fg(color);
+                if matches!(status, Status::Path | Status::Expanding) {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                style
+            }
+        }
+    }
+
     /// Dimmed style for labels and chrome.
     pub fn muted(&self) -> Style {
         match self.depth {
@@ -205,6 +305,17 @@ impl Theme {
             ColorDepth::Ansi16 => Style::new().fg(Color::Cyan),
             ColorDepth::Full => Style::new().fg(Color::Rgb(110, 200, 225)),
         }
+    }
+}
+
+/// The second-column marker that stands in for colour in monochrome.
+fn status_marker(status: Status) -> char {
+    match status {
+        Status::Unseen => ' ',
+        Status::Frontier => '+',
+        Status::Expanding => '>',
+        Status::Settled => '-',
+        Status::Path => '*',
     }
 }
 
