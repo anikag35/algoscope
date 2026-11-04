@@ -225,37 +225,79 @@ fn magnitude(value: u32, max: u32) -> Color {
 
 fn detect_depth() -> ColorDepth {
     // https://no-color.org: any non-empty value means no colour.
-    if env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty()) {
+    let no_color = env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty());
+    depth_from(
+        no_color,
+        &env::var("TERM").unwrap_or_default(),
+        &env::var("COLORTERM").unwrap_or_default(),
+    )
+}
+
+/// The colour decision, separated from the environment so it can be tested
+/// without mutating process-wide state from several threads at once.
+fn depth_from(no_color: bool, term: &str, colorterm: &str) -> ColorDepth {
+    if no_color {
         return ColorDepth::Mono;
     }
-
-    let term = env::var("TERM").unwrap_or_default();
     if term.is_empty() || term == "dumb" {
         return ColorDepth::Mono;
     }
-
-    let colorterm = env::var("COLORTERM").unwrap_or_default();
     if colorterm.eq_ignore_ascii_case("truecolor") || colorterm.eq_ignore_ascii_case("24bit") {
         return ColorDepth::Full;
     }
     if term.contains("256color") || term.contains("direct") {
         return ColorDepth::Full;
     }
-
     ColorDepth::Ansi16
 }
 
 fn detect_unicode() -> bool {
-    // The locale variables are the only portable hint available. Checked in the
-    // precedence order the C library uses.
-    ["LC_ALL", "LC_CTYPE", "LANG"]
+    // Checked in the precedence order the C library uses.
+    let locale = ["LC_ALL", "LC_CTYPE", "LANG"]
         .iter()
         .filter_map(|key| env::var(key).ok())
-        .find(|value| !value.is_empty())
-        .is_some_and(|value| {
-            let value = value.to_ascii_lowercase();
-            value.contains("utf-8") || value.contains("utf8")
-        })
+        .find(|value| !value.is_empty());
+
+    unicode_from(
+        &env::var("TERM").unwrap_or_default(),
+        locale.as_deref(),
+    )
+}
+
+/// The glyph decision, separated from the environment for the same reason as
+/// [`depth_from`].
+///
+/// Assumes UTF-8 and looks only for positive evidence against it. Requiring a
+/// UTF-8 locale looks more careful but is wrong in the most common case: macOS
+/// routinely leaves `LANG` unset while running a perfectly capable
+/// Terminal.app, so demanding it would hand every default Mac shell the ASCII
+/// fallback. The locale is in any case a poor proxy for what the terminal can
+/// draw — it describes what the C library should assume about byte encoding,
+/// while we emit UTF-8 bytes either way and the emulator renders them on their
+/// own merits.
+fn unicode_from(term: &str, locale: Option<&str>) -> bool {
+    // No terminal, or one that has said it can do nothing. The Linux virtual
+    // console is here because its default font has no block-element glyphs,
+    // whatever its encoding.
+    if term.is_empty() || term == "dumb" || term == "linux" {
+        return false;
+    }
+
+    // An explicit C or POSIX locale, or one naming a charset that is not
+    // UTF-8, is a deliberate statement and is honoured.
+    if let Some(locale) = locale {
+        let locale = locale.to_ascii_lowercase();
+        if locale == "c" || locale == "posix" {
+            return false;
+        }
+        if let Some((_, charset)) = locale.split_once('.') {
+            return charset.contains("utf-8") || charset.contains("utf8");
+        }
+        // A locale with no charset suffix, such as `en_US`, says nothing
+        // either way, so it does not override the default.
+    }
+
+    true
 }
 
 #[cfg(test)]
@@ -295,6 +337,57 @@ mod tests {
     fn magnitude_spans_the_ramp() {
         assert_eq!(magnitude(0, 10), Color::Rgb(48, 88, 172));
         assert_eq!(magnitude(10, 10), Color::Rgb(112, 214, 228));
+    }
+
+    #[test]
+    fn unicode_is_assumed_unless_something_says_otherwise() {
+        // The case that matters most: a stock macOS shell exports no locale at
+        // all, and it must still get the real glyphs.
+        assert!(unicode_from("xterm-256color", None));
+        assert!(unicode_from("xterm-256color", Some("en_US.UTF-8")));
+        assert!(unicode_from("screen", Some("en_US.utf8")));
+        // A locale with no charset suffix says nothing either way.
+        assert!(unicode_from("xterm", Some("en_US")));
+        assert!(unicode_from("xterm", Some("")));
+    }
+
+    #[test]
+    fn unicode_yields_to_positive_evidence_against_it() {
+        assert!(!unicode_from("", None), "no TERM at all");
+        assert!(!unicode_from("dumb", Some("en_US.UTF-8")), "TERM=dumb");
+        assert!(!unicode_from("linux", None), "no block glyphs in that font");
+        assert!(!unicode_from("xterm-256color", Some("C")));
+        assert!(!unicode_from("xterm-256color", Some("POSIX")));
+        assert!(!unicode_from("xterm-256color", Some("en_US.ISO8859-1")));
+    }
+
+    #[test]
+    fn colour_depth_reads_the_usual_signals() {
+        assert_eq!(
+            depth_from(false, "xterm-256color", ""),
+            ColorDepth::Full,
+            "256color in TERM"
+        );
+        assert_eq!(
+            depth_from(false, "xterm", "truecolor"),
+            ColorDepth::Full,
+            "COLORTERM"
+        );
+        assert_eq!(depth_from(false, "xterm", "24bit"), ColorDepth::Full);
+        assert_eq!(depth_from(false, "xterm", ""), ColorDepth::Ansi16);
+        assert_eq!(depth_from(false, "vt100", ""), ColorDepth::Ansi16);
+    }
+
+    #[test]
+    fn no_color_wins_over_everything() {
+        // https://no-color.org is explicit that the variable's presence is the
+        // signal, and it must beat even a truecolor COLORTERM.
+        assert_eq!(
+            depth_from(true, "xterm-256color", "truecolor"),
+            ColorDepth::Mono
+        );
+        assert_eq!(depth_from(false, "dumb", "truecolor"), ColorDepth::Mono);
+        assert_eq!(depth_from(false, "", ""), ColorDepth::Mono);
     }
 
     #[test]
