@@ -65,7 +65,7 @@ pub const BFS: Complexity = Complexity {
     average: "O(V)",
     worst: "O(V)",
     space: "O(V)",
-    note: "fewest tiles, ignores cost",
+    note: "fewest tiles",
 };
 
 pub const DFS: Complexity = Complexity {
@@ -73,7 +73,7 @@ pub const DFS: Complexity = Complexity {
     average: "O(V)",
     worst: "O(V)",
     space: "O(V)",
-    note: "finds a route, not a good one",
+    note: "no guarantee at all",
 };
 
 pub const DIJKSTRA: Complexity = Complexity {
@@ -81,7 +81,7 @@ pub const DIJKSTRA: Complexity = Complexity {
     average: "O(V log V)",
     worst: "O(V log V)",
     space: "O(V)",
-    note: "cheapest route, searches blind",
+    note: "cheapest route, blind",
 };
 
 pub const ASTAR: Complexity = Complexity {
@@ -89,7 +89,7 @@ pub const ASTAR: Complexity = Complexity {
     average: "O(V log V)",
     worst: "O(V log V)",
     space: "O(V)",
-    note: "cheapest route, aims at the goal",
+    note: "cheapest, goal-directed",
 };
 
 /// Breadth-first search: expand the frontier in order of hop count.

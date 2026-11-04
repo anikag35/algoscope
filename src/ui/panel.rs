@@ -26,6 +26,18 @@ pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
             app.algorithm_name().to_string(),
             theme.accent(),
         )),
+        // The step counter sits at the top because the sidebar is the first
+        // thing a short terminal clips, and position is the one field that
+        // changes every frame.
+        field(
+            "step",
+            &format!(
+                "{} / {}",
+                commas(app.cursor() as u64),
+                commas(app.len() as u64)
+            ),
+            theme,
+        ),
         Line::default(),
         heading("COMPLEXITY", theme),
     ];
@@ -38,25 +50,18 @@ pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
     ] {
         lines.push(field(label, &theme.text(value), theme));
     }
-    lines.push(field("notes", &theme.text(complexity.note), theme));
+    // The note is prose, not a measurement, so it gets the panel's full width
+    // rather than being squeezed into the value column and truncated.
+    lines.push(Line::from(Span::styled(
+        theme.text(complexity.note).into_owned(),
+        theme.muted(),
+    )));
     lines.push(Line::default());
 
     match app.view() {
         View::Sort(state) => sort_metrics(&mut lines, state, theme),
-        View::Grid { state, .. } => grid_metrics(&mut lines, state, theme),
+        View::Grid { state, .. } => grid_metrics(&mut lines, state, app.at_end(), theme),
     }
-
-    lines.push(Line::default());
-    lines.push(heading("PROGRESS", theme));
-    lines.push(field(
-        "step",
-        &format!(
-            "{} / {}",
-            commas(app.cursor() as u64),
-            commas(app.len() as u64)
-        ),
-        theme,
-    ));
 
     Paragraph::new(lines).block(
         Block::new()
@@ -80,7 +85,12 @@ fn sort_metrics(lines: &mut Vec<Line<'static>>, state: &SortState, theme: &Theme
     lines.push(field("n(n-1)/2 =", &commas(pairs(n)), theme));
 }
 
-fn grid_metrics(lines: &mut Vec<Line<'static>>, state: &GridState, theme: &Theme) {
+fn grid_metrics(
+    lines: &mut Vec<Line<'static>>,
+    state: &GridState,
+    finished: bool,
+    theme: &Theme,
+) {
     let cells = state.grid.len();
 
     lines.push(heading("SEARCH", theme));
@@ -98,8 +108,13 @@ fn grid_metrics(lines: &mut Vec<Line<'static>>, state: &GridState, theme: &Theme
     if state.has_path() {
         lines.push(field("tiles", &commas(u64::from(state.path_cells)), theme));
         lines.push(field("cost", &commas(u64::from(state.path_cost)), theme));
-    } else if state.goal_cost().is_some() {
-        lines.push(field("tiles", "reached", theme));
+    } else if !finished {
+        // Mid-search there is simply no answer yet, which is a different thing
+        // from there being no route at all.
+        lines.push(Line::from(Span::styled(
+            "searching".to_string(),
+            theme.muted(),
+        )));
     } else {
         // An unreachable goal is a real result, not an error, and the panel
         // says so rather than showing a misleading zero.
