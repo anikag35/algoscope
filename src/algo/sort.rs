@@ -429,7 +429,11 @@ mod tests {
     #[test]
     fn selection_comparison_count_is_input_independent() {
         // n(n-1)/2 = 10 for n = 5, whatever the order.
-        for input in [vec![1, 2, 3, 4, 5], vec![5, 4, 3, 2, 1], vec![3, 1, 4, 1, 5]] {
+        for input in [
+            vec![1, 2, 3, 4, 5],
+            vec![5, 4, 3, 2, 1],
+            vec![3, 1, 4, 1, 5],
+        ] {
             let trace = selection(input);
             assert_eq!(trace.state_at(trace.len()).comparisons, 10);
         }

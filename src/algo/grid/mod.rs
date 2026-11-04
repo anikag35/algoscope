@@ -12,7 +12,6 @@
 //! breadth-first finds the route with the fewest tiles while Dijkstra finds the
 //! genuinely cheapest one, and they are not the same route.
 
-
 pub mod search;
 
 use rand::rngs::StdRng;
@@ -622,7 +621,11 @@ mod tests {
 
         assert_eq!(neighbours.len(), 4);
         for &n in &neighbours {
-            assert_eq!(grid.manhattan(cell, n), 1, "neighbour must be one step away");
+            assert_eq!(
+                grid.manhattan(cell, n),
+                1,
+                "neighbour must be one step away"
+            );
         }
         let mut sorted = neighbours.clone();
         sorted.sort_unstable();
@@ -662,7 +665,10 @@ mod tests {
             .count();
 
         assert!(walls > 0, "no obstacles at all");
-        assert!(rough > 0, "no rough ground, so Dijkstra has nothing to find");
+        assert!(
+            rough > 0,
+            "no rough ground, so Dijkstra has nothing to find"
+        );
         assert!(
             walls < grid.len() / 2,
             "more than half walls would leave nothing to search"

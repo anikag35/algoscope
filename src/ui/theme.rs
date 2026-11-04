@@ -91,7 +91,11 @@ impl Theme {
 
     /// The glyph for `n` eighths of a cell filled, `n` in `0..=8`.
     pub fn eighth(&self, n: usize) -> char {
-        let table = if self.unicode { &EIGHTHS } else { &EIGHTHS_ASCII };
+        let table = if self.unicode {
+            &EIGHTHS
+        } else {
+            &EIGHTHS_ASCII
+        };
         table[n.min(8)]
     }
 
@@ -210,9 +214,27 @@ impl Theme {
             CellRole::Start => 'S',
             CellRole::Goal => 'G',
             CellRole::Plain => match terrain {
-                Terrain::Wall => if self.unicode { '\u{2588}' } else { '#' },
-                Terrain::Rough => if self.unicode { '\u{2592}' } else { ':' },
-                Terrain::Open => if self.unicode { '\u{00b7}' } else { '.' },
+                Terrain::Wall => {
+                    if self.unicode {
+                        '\u{2588}'
+                    } else {
+                        '#'
+                    }
+                }
+                Terrain::Rough => {
+                    if self.unicode {
+                        '\u{2592}'
+                    } else {
+                        ':'
+                    }
+                }
+                Terrain::Open => {
+                    if self.unicode {
+                        '\u{00b7}'
+                    } else {
+                        '.'
+                    }
+                }
             },
         };
 
@@ -369,10 +391,7 @@ fn detect_unicode() -> bool {
         .filter_map(|key| env::var(key).ok())
         .find(|value| !value.is_empty());
 
-    unicode_from(
-        &env::var("TERM").unwrap_or_default(),
-        locale.as_deref(),
-    )
+    unicode_from(&env::var("TERM").unwrap_or_default(), locale.as_deref())
 }
 
 /// The glyph decision, separated from the environment for the same reason as

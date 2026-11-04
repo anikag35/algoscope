@@ -731,7 +731,8 @@ impl App {
 
             KeyCode::Char(c @ '1'..='9') => {
                 self.pause();
-                self.active_mut().select_algorithm(c as usize - '1' as usize);
+                self.active_mut()
+                    .select_algorithm(c as usize - '1' as usize);
             }
 
             _ => {}

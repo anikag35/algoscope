@@ -74,13 +74,22 @@ fn assert_grid_eq(left: &GridState, right: &GridState, ctx: &str) {
     assert_eq!(left.status, right.status, "cell statuses differ {ctx}");
     assert_eq!(left.cost, right.cost, "known costs differ {ctx}");
     assert_eq!(left.from, right.from, "predecessors differ {ctx}");
-    assert_eq!(left.examined, right.examined, "examined count differs {ctx}");
+    assert_eq!(
+        left.examined, right.examined,
+        "examined count differs {ctx}"
+    );
     assert_eq!(
         left.relaxations, right.relaxations,
         "relaxation count differs {ctx}"
     );
-    assert_eq!(left.expanded, right.expanded, "expanded count differs {ctx}");
-    assert_eq!(left.path_cells, right.path_cells, "path length differs {ctx}");
+    assert_eq!(
+        left.expanded, right.expanded,
+        "expanded count differs {ctx}"
+    );
+    assert_eq!(
+        left.path_cells, right.path_cells,
+        "path length differs {ctx}"
+    );
     assert_eq!(left.path_cost, right.path_cost, "path cost differs {ctx}");
 }
 

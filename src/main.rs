@@ -15,9 +15,7 @@ use ratatui::layout::{Rect, Size};
 
 use algoscope::algo::grid::search as search_algo;
 use algoscope::algo::sort;
-use algoscope::app::{
-    App, Config, DEFAULT_SIZE, MAX_GRID, MAX_SIZE, MIN_GRID, MIN_SIZE, Mode,
-};
+use algoscope::app::{App, Config, DEFAULT_SIZE, MAX_GRID, MAX_SIZE, MIN_GRID, MIN_SIZE, Mode};
 use algoscope::ui;
 use algoscope::ui::grid::GridView;
 use algoscope::ui::theme::Theme;
@@ -138,7 +136,12 @@ fn fit_grid(size: Size) -> (u16, u16) {
     // Mirrors the layout: the sidebar is only drawn when there is room, and
     // two rows go to the scrubber and the status line.
     let sidebar = if size.width >= 76 { 32 } else { 0 };
-    let usable = Rect::new(0, 0, size.width.saturating_sub(sidebar), size.height.saturating_sub(2));
+    let usable = Rect::new(
+        0,
+        0,
+        size.width.saturating_sub(sidebar),
+        size.height.saturating_sub(2),
+    );
     let (columns, rows) = GridView::capacity(usable);
     (
         columns.clamp(MIN_GRID, MAX_GRID),
@@ -228,7 +231,11 @@ impl Options {
             }
         }
 
-        let theme = if ascii { Theme::minimal() } else { Theme::detect() };
+        let theme = if ascii {
+            Theme::minimal()
+        } else {
+            Theme::detect()
+        };
 
         Ok(Some(Self {
             mode,
@@ -280,9 +287,7 @@ fn parse_sort_algorithm(name: &str) -> Result<sort::Algorithm, String> {
     sort::Algorithm::ALL
         .into_iter()
         .find(|a| !lowered.is_empty() && a.name().to_ascii_lowercase().starts_with(&lowered))
-        .ok_or_else(|| {
-            format!("unknown sort '{name}' (try bubble, insertion or selection)")
-        })
+        .ok_or_else(|| format!("unknown sort '{name}' (try bubble, insertion or selection)"))
 }
 
 fn parse_grid_algorithm(name: &str) -> Result<search_algo::Algorithm, String> {
@@ -305,9 +310,7 @@ fn parse_grid_algorithm(name: &str) -> Result<search_algo::Algorithm, String> {
         .into_iter()
         .find(|(alias, _)| alias.starts_with(&lowered))
         .map(|(_, algorithm)| algorithm)
-        .ok_or_else(|| {
-            format!("unknown search '{name}' (try bfs, dfs, dijkstra or astar)")
-        })
+        .ok_or_else(|| format!("unknown search '{name}' (try bfs, dfs, dijkstra or astar)"))
 }
 
 #[cfg(test)]
@@ -339,9 +342,16 @@ mod tests {
 
     #[test]
     fn short_flags_match_long_ones() {
-        let long = parse(&["--mode", "grid", "--algorithm", "dijkstra", "--grid", "30x20"])
-            .unwrap()
-            .unwrap();
+        let long = parse(&[
+            "--mode",
+            "grid",
+            "--algorithm",
+            "dijkstra",
+            "--grid",
+            "30x20",
+        ])
+        .unwrap()
+        .unwrap();
         let short = parse(&["-m", "grid", "-a", "dijkstra", "-g", "30x20"])
             .unwrap()
             .unwrap();

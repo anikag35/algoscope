@@ -447,7 +447,11 @@ mod tests {
             let trace = algorithm.run(grid.clone());
             let state = trace.state_at(trace.len());
             assert_eq!(state.path_cells, 1, "{}", trace.name);
-            assert_eq!(state.path_cost, 0, "{} charged for standing still", trace.name);
+            assert_eq!(
+                state.path_cost, 0,
+                "{} charged for standing still",
+                trace.name
+            );
         }
     }
 

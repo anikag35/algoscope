@@ -85,12 +85,7 @@ fn sort_metrics(lines: &mut Vec<Line<'static>>, state: &SortState, theme: &Theme
     lines.push(field("n(n-1)/2 =", &commas(pairs(n)), theme));
 }
 
-fn grid_metrics(
-    lines: &mut Vec<Line<'static>>,
-    state: &GridState,
-    finished: bool,
-    theme: &Theme,
-) {
+fn grid_metrics(lines: &mut Vec<Line<'static>>, state: &GridState, finished: bool, theme: &Theme) {
     let cells = state.grid.len();
 
     lines.push(heading("SEARCH", theme));
@@ -240,15 +235,11 @@ pub fn help(app: &App, theme: &Theme) -> Paragraph<'static> {
     };
 
     let count = format!("1 .. {}", app.algorithm_count());
-    let binds = SHARED
-        .iter()
-        .copied()
-        .chain(extra.iter().copied())
-        .chain([
-            (count.as_str(), "pick an algorithm"),
-            ("?", "close this"),
-            ("q", "quit"),
-        ]);
+    let binds = SHARED.iter().copied().chain(extra.iter().copied()).chain([
+        (count.as_str(), "pick an algorithm"),
+        ("?", "close this"),
+        ("q", "quit"),
+    ]);
 
     for (keys, description) in binds {
         lines.push(Line::from(vec![

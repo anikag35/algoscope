@@ -118,9 +118,7 @@ mod tests {
 
     /// How many rows of column `x` are non-blank.
     fn column_height(buf: &Buffer, x: u16, height: u16) -> usize {
-        (0..height)
-            .filter(|&y| buf[(x, y)].symbol() != " ")
-            .count()
+        (0..height).filter(|&y| buf[(x, y)].symbol() != " ").count()
     }
 
     #[test]

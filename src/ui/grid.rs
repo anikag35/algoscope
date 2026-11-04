@@ -113,11 +113,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         GridView::new(state, theme).render(area, &mut buf);
         (0..height)
-            .map(|y| {
-                (0..width)
-                    .map(|x| buf[(x, y)].symbol())
-                    .collect::<String>()
-            })
+            .map(|y| (0..width).map(|x| buf[(x, y)].symbol()).collect::<String>())
             .collect()
     }
 
@@ -174,7 +170,10 @@ mod tests {
     fn ascii_theme_emits_only_ascii() {
         let state = finished();
         for line in render(&state, &Theme::minimal(), 40, 10) {
-            assert!(line.is_ascii(), "non-ASCII from the minimal theme: {line:?}");
+            assert!(
+                line.is_ascii(),
+                "non-ASCII from the minimal theme: {line:?}"
+            );
         }
     }
 
