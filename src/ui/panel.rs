@@ -1,9 +1,10 @@
 //! The metrics sidebar, the status line, the scrubber, and the help overlay.
 //!
 //! The sidebar is the part that makes this more than an animation: it shows the
-//! work actually performed next to the textbook bound for the same `n`, so the
-//! gap between `O(n²)` as a phrase and 1,128 comparisons as a number is visible
-//! while the sort runs.
+//! work actually performed next to the textbook bound for the same input, so
+//! the gap between `O(n²)` as a phrase and 1,128 comparisons as a number is
+//! visible while the algorithm runs. In grid mode the equivalent is A\*'s
+//! expansion count sitting next to Dijkstra's on the same map.
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -11,19 +12,20 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget};
 
 use super::theme::Theme;
-use crate::app::App;
+use crate::algo::grid::GridState;
+use crate::algo::sort::SortState;
+use crate::app::{App, Mode, View};
 
 /// The metrics sidebar.
 pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
-    let playback = app.playback();
-    let state = playback.state();
-    let trace = playback.trace();
-    let complexity = &trace.complexity;
-    let n = app.size();
+    let complexity = app.complexity();
 
     let mut lines = vec![
         heading("ALGORITHM", theme),
-        Line::from(Span::styled(trace.name.to_string(), theme.accent())),
+        Line::from(Span::styled(
+            app.algorithm_name().to_string(),
+            theme.accent(),
+        )),
         Line::default(),
         heading("COMPLEXITY", theme),
     ];
@@ -36,34 +38,25 @@ pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
     ] {
         lines.push(field(label, &theme.text(value), theme));
     }
-    lines.push(field(
-        "notes",
-        &theme.text(complexity.note),
-        theme,
-    ));
+    lines.push(field("notes", &theme.text(complexity.note), theme));
+    lines.push(Line::default());
+
+    match app.view() {
+        View::Sort(state) => sort_metrics(&mut lines, state, theme),
+        View::Grid { state, .. } => grid_metrics(&mut lines, state, theme),
+    }
 
     lines.push(Line::default());
-    lines.push(heading("WORK DONE", theme));
-    lines.push(field("comparisons", &commas(state.comparisons), theme));
-    lines.push(field("writes", &commas(state.writes), theme));
+    lines.push(heading("PROGRESS", theme));
     lines.push(field(
         "step",
         &format!(
             "{} / {}",
-            commas(playback.cursor() as u64),
-            commas(playback.len() as u64)
+            commas(app.cursor() as u64),
+            commas(app.len() as u64)
         ),
         theme,
     ));
-
-    lines.push(Line::default());
-    lines.push(heading(&format!("BOUNDS (n = {n})"), theme));
-    lines.push(field(
-        &theme.text("n log n ≈"),
-        &commas(n_log_n(n)),
-        theme,
-    ));
-    lines.push(field("n(n-1)/2 =", &commas(pairs(n)), theme));
 
     Paragraph::new(lines).block(
         Block::new()
@@ -74,13 +67,56 @@ pub fn metrics(app: &App, theme: &Theme) -> Paragraph<'static> {
     )
 }
 
+fn sort_metrics(lines: &mut Vec<Line<'static>>, state: &SortState, theme: &Theme) {
+    let n = state.values.len();
+
+    lines.push(heading("WORK DONE", theme));
+    lines.push(field("comparisons", &commas(state.comparisons), theme));
+    lines.push(field("writes", &commas(state.writes), theme));
+
+    lines.push(Line::default());
+    lines.push(heading(&format!("BOUNDS (n = {n})"), theme));
+    lines.push(field(&theme.text("n log n ≈"), &commas(n_log_n(n)), theme));
+    lines.push(field("n(n-1)/2 =", &commas(pairs(n)), theme));
+}
+
+fn grid_metrics(lines: &mut Vec<Line<'static>>, state: &GridState, theme: &Theme) {
+    let cells = state.grid.len();
+
+    lines.push(heading("SEARCH", theme));
+    lines.push(field("expanded", &commas(state.expanded), theme));
+    lines.push(field("examined", &commas(state.examined), theme));
+    lines.push(field("relaxed", &commas(state.relaxations), theme));
+    lines.push(field(
+        "of cells",
+        &format!("{} / {}", commas(state.expanded), commas(cells as u64)),
+        theme,
+    ));
+
+    lines.push(Line::default());
+    lines.push(heading("ROUTE", theme));
+    if state.has_path() {
+        lines.push(field("tiles", &commas(u64::from(state.path_cells)), theme));
+        lines.push(field("cost", &commas(u64::from(state.path_cost)), theme));
+    } else if state.goal_cost().is_some() {
+        lines.push(field("tiles", "reached", theme));
+    } else {
+        // An unreachable goal is a real result, not an error, and the panel
+        // says so rather than showing a misleading zero.
+        lines.push(Line::from(Span::styled(
+            "no route".to_string(),
+            theme.muted(),
+        )));
+    }
+}
+
 /// The one-line status bar.
 pub fn status(app: &App, theme: &Theme) -> Line<'static> {
-    let playback = app.playback();
-
-    let (marker, label) = if app.playing() {
+    let (marker, label) = if app.editing() {
+        ("#".to_string(), "editing")
+    } else if app.playing() {
         (theme.text("▶").into_owned(), "playing")
-    } else if playback.at_end() {
+    } else if app.at_end() {
         ("=".to_string(), "done")
     } else {
         ("|".to_string(), "paused")
@@ -91,11 +127,11 @@ pub fn status(app: &App, theme: &Theme) -> Line<'static> {
     // The algorithm name leads, because on a narrow terminal the sidebar is
     // dropped and this line is the only place it appears.
     Line::from(vec![
-        Span::styled(playback.trace().name.to_string(), theme.accent()),
+        Span::styled(app.algorithm_name().to_string(), theme.accent()),
         separator(),
         Span::raw(format!("{marker} {label}")),
         separator(),
-        Span::raw(format!("{} items", app.size())),
+        Span::raw(app.extent()),
         separator(),
         Span::raw(format!(
             "speed {}/{}",
@@ -143,37 +179,63 @@ impl Widget for Scrubber<'_> {
 }
 
 /// The keybind overlay.
-pub fn help(theme: &Theme) -> Paragraph<'static> {
-    const BINDS: &[(&str, &str)] = &[
+pub fn help(app: &App, theme: &Theme) -> Paragraph<'static> {
+    const SHARED: &[(&str, &str)] = &[
         ("space / enter", "play or pause"),
         ("→ / l", "one step forward"),
         ("← / h", "one step back"),
-        ("pgup / pgdn", "scrub by a tenth of the run"),
+        ("pgup / pgdn", "scrub by a tenth"),
         ("home / g", "jump to the start"),
         ("end / G", "jump to the end"),
         ("↑ / k", "faster"),
         ("↓ / j", "slower"),
-        ("tab", "next algorithm, same array"),
-        ("1 .. 3", "pick an algorithm"),
-        ("r", "reshuffle"),
-        ("+ / -", "grow or shrink the array"),
-        ("?", "close this"),
-        ("q / esc", "quit"),
+        ("tab", "next algorithm"),
+        ("r", "new input"),
+        ("+ / -", "grow or shrink"),
+        ("m", "sorting / pathfinding"),
     ];
 
+    const EDIT: &[(&str, &str)] = &[
+        ("e", "leave edit mode"),
+        ("arrows / hjkl", "move the cursor"),
+        ("space", "open / rough / wall"),
+        ("s", "put the start here"),
+        ("g", "put the goal here"),
+    ];
+
+    const GRID: &[(&str, &str)] = &[("e", "edit the terrain")];
+
+    let intro = if app.editing() {
+        "Painting re-runs the search and shows the result."
+    } else {
+        "Changing algorithm keeps the same input, so the counts stay comparable."
+    };
+
     let mut lines = vec![
-        Line::from(Span::styled(
-            "Switching algorithm keeps the same array, so the".to_string(),
-            theme.muted(),
-        )),
-        Line::from(Span::styled(
-            "comparison counts are directly comparable.".to_string(),
-            theme.muted(),
-        )),
+        Line::from(Span::styled(intro.to_string(), theme.muted())),
         Line::default(),
     ];
 
-    for (keys, description) in BINDS {
+    let extra: &[(&str, &str)] = if app.editing() {
+        EDIT
+    } else if app.mode() == Mode::Grid {
+        GRID
+    } else {
+        &[]
+    };
+
+    let count = format!("1 .. {}", app.algorithm_count());
+    let binds = SHARED
+        .iter()
+        .copied()
+        .chain(extra.iter().copied())
+        .chain([
+            (count.as_str(), "pick an algorithm"),
+            ("?", "close this"),
+            ("q", "quit"),
+        ]);
+
+    for (keys, description) in binds {
         lines.push(Line::from(vec![
             Span::styled(
                 format!("{:<16}", theme.text(keys).into_owned()),
@@ -191,6 +253,19 @@ pub fn help(theme: &Theme) -> Paragraph<'static> {
             .title_style(theme.strong())
             .padding(Padding::new(2, 2, 1, 1)),
     )
+}
+
+/// How many rows [`help`] wants, so the layout can size its box.
+pub fn help_height(app: &App) -> u16 {
+    let extra = if app.editing() {
+        5
+    } else if app.mode() == Mode::Grid {
+        1
+    } else {
+        0
+    };
+    // 12 shared binds + 3 trailing + intro, blank line, and the border.
+    12 + 3 + extra + 5
 }
 
 fn heading(text: &str, theme: &Theme) -> Line<'static> {
