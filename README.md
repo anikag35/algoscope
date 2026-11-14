@@ -1,5 +1,7 @@
 # algoscope
 
+[![crates.io](https://img.shields.io/crates/v/algoscope.svg)](https://crates.io/crates/algoscope)
+[![docs.rs](https://img.shields.io/docsrs/algoscope)](https://docs.rs/algoscope)
 [![CI](https://github.com/anikag35/algoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/anikag35/algoscope/actions/workflows/ci.yml)
 
 An interactive terminal visualizer for classic algorithms, with step-through
@@ -19,16 +21,14 @@ algorithm deliberately keeps the input fixed.
 
 ## Install
 
-From source, which needs a Rust toolchain (1.88 or newer):
+```bash
+cargo install algoscope
+```
+
+Needs a Rust toolchain, 1.88 or newer. Or run it from source:
 
 ```bash
 git clone https://github.com/anikag35/algoscope && cd algoscope && cargo run --release
-```
-
-Or install the binary onto your `PATH`:
-
-```bash
-cargo install --path .
 ```
 
 ## Keys
