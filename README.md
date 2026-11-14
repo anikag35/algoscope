@@ -9,7 +9,7 @@ next to the textbook bound for the same input.
 
 Two modes: sorting, and pathfinding on a weighted grid.
 
-![algoscope demo](assets/demo.gif)
+![algoscope demo](https://raw.githubusercontent.com/anikag35/algoscope/main/assets/demo.gif)
 
 The second half of that recording is the part worth pausing on. Dijkstra and
 A\* run on the *same* map and find the *same* route — 32 tiles, cost 39 — but
