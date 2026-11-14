@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+# A new push to the same branch makes the previous run's result irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Report every platform's result, not just the first to fail -- the
+      # point of the matrix is to tell macOS-only breakage from universal.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # All three platforms, because the app makes portability claims it
+      # should have to keep: key-release filtering exists for Windows, and
+      # terminal capability detection branches on the environment.
+      - run: cargo test --locked --all-features
+
+  lint:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      # Covers rustc's own warnings as well as clippy's, which is why no
+      # global RUSTFLAGS is set: -D warnings there would also apply to
+      # dependencies, failing the build on warnings that are not ours.
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+  msrv:
+    name: msrv 1.88
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned to the rust-version in Cargo.toml, so the claim is tested
+      # rather than asserted.
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --locked --all-targets --all-features
