@@ -1,5 +1,7 @@
 # algoscope
 
+[![CI](https://github.com/anikag35/algoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/anikag35/algoscope/actions/workflows/ci.yml)
+
 An interactive terminal visualizer for classic algorithms, with step-through
 controls and live complexity annotations. Scrub forwards *and backwards*
 through a run one operation at a time, and watch the work actually performed
@@ -7,66 +9,13 @@ next to the textbook bound for the same input.
 
 Two modes: sorting, and pathfinding on a weighted grid.
 
-```
-                                                                 ▄▄█│  ALGORITHM
-                                                              ▃▇▇███│  Bubble sort
-                                                          ▂▂▆▆██████│  step         700 / 1,165
-                                                       ▁▁▆██████████│
-                                                     ▅▅█████████████│  COMPLEXITY
-                                                  ▄█████████████████│  best         O(n)
-                                              ▃▃████████████████████│  average      O(n²)
-                                         ▂▂  ▇██████████████████████│  worst        O(n²)
-                                 ▂    ▆▆ ██  ███████████████████████│  space        O(1)
-                            ▁▅▅  █    ██ ██  ███████████████████████│  stable, adaptive
-                   ▄▄       ███  █    ██ ██  ███████████████████████│
-              ▄▄ ████       ███  █    ██ ██  ███████████████████████│  WORK DONE
-            ▇▇██ ████       ███  █▃▃  ██ ██  ███████████████████████│  comparisons  429
-           ▆████ ████▂▂     ███  ███  ██ ██  ███████████████████████│  writes       518
-         ▁▁█████ ██████     ███  ███  ██▆██  ███████████████████████│
-      ▅  ███████ ██████     ███  ███  █████  ███████████████████████│  BOUNDS (n = 40)
-    ▄▄█  ███████ ██████     ████████  █████  ███████████████████████│  n log n ≈    213
-  █████  ███████ ██████     ████████  █████▃▃███████████████████████│  n(n-1)/2 =   780
-  █████  ███████▂██████ ▇▇  ████████  ██████████████████████████████│
-▅▅█████  █████████████████▁▁████████████████████████████████████████│
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━────────────────────
-Bubble sort  ·  ▶ playing  ·  40 items  ·  speed 3/7  ·  seed 11  ·  ? keys
-```
+![algoscope demo](assets/demo.gif)
 
-Press `m` for pathfinding. Shown here in `--ascii`, where terrain is the first
-column and search state the second, so the whole run is legible as plain text —
-`#` wall, `:` rough, `.` open; `+` frontier, `-` settled, `*` route:
-
-```
-.-# # # # .-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-:-:+: : # # |  ALGORITHM
-.-# # # # .-.-.-.-.-.-.-:-.-.-.-.-.-.-.-.-.-.-.-.-.-:-:-:-:-:+# # # |  Dijkstra
-.-.-.-.-.-.-.-.-.-.-.-.-:-:-.-:-.-.-.-.-.-.-.-.-.-.-:-:-.-.-:-# # # |  step         2,686 / 2,686
-.-.-.-.-.-.-.-.-.-.-.-.-:-:-:-:-# # # .-.-.-.-.-.-:-:-:-.-.-.-# # # |
-# .-.-.-.-# .-.-.-.-.-.-.-:-:-:-# # # .-.-.-.-.-.-:-:-.-.-# :-:+: # |  COMPLEXITY
-# .-:-.-# # .-.-.-.-.-.-.-.-.-# # .-.-.*.*.*.*.-.-.-.-.-.-:-:-:+: # |  best         O(1)
-# :-:-.-.-# .-.-.-.-.-.-.-.-.-.-.-.-.-.*# # .*.*.*.-.-.-.-.-:-:+: : |  average      O(V log V)
-:-:-:-:-# # .-.-.-.-.-.-.-.-.-.-.-.*.*.*:-# :-:-.*.-.-.-.-.-.-.-:+. |  worst        O(V log V)
-:-.-:-:-# .*.*.*.*.*.*.*.*.*.*.*.*.*:-:-:-# :-:-.*.*.*.*.*.*.*.*.-.+|  space        O(V)
-.-S*.*:*:*:*:-.-.-# # # # .-.-.-.-.-:-:-:-# :-:-:-:-.-.-.-.-# .*G*. |  cheapest route, blind
-.-.-:-:-:-:-:-.-.-.-.-# # # .-.-.-.-:-:-:-:-:-:-:-:-.-.-.-.-# # . : |
-.-.-:-.-.-:-:-:-.-.-.-.-# # # .-# # :-:-:-# # # .-:-.-.-:-:+: : : : |  SEARCH
-.-.-.-.-.-:-:-:-:-:-.-.-.-# # .-# # # # .-.-.-:-# .-:-:-:+: # : : : |  expanded     403
-.-.-.-.-.-:-:-:-:-:-.-.-.-.-.-.-# . # # .-.-.-:-.-.+.-:+: : : : : : |  examined     1,420
-.-.-# # .-:-# :-:-:-# # # .-.-.-# # # # .-.-.-:-:+: :+: : : . : : : |  relaxed      420
-# # # # :-:-# :-:-:-# # .-.-# # # . . # # # .-:+: : . . . . # # : . |  of cells     403 / 612
-# . . # :-:-:-.-:-:-# # # # # # . . . # # # .-.-:+: . : . : : : : : |
-. . . # :-:-:-.-.-.-# # # . # . . . # # # .+.-.+. : . : : : : : : : |  ROUTE
-                                                                    |  tiles        40
-====================================================================|  cost         45
-Dijkstra  *  = done  *  34x18  *  speed 3/7  *  seed 9  *  ? keys
-```
-
-With colour the terrain glyph fills both columns and colour carries the search
-state instead, so a rough cell stays visibly rough after the frontier crosses
-it — which is what shows *why* a route detoured around it.
-
-Switch that same map to A\* (`4`) and it finds the identical route, cost 45 over
-40 tiles, having expanded **153** cells instead of 403. That comparison is the
-whole argument for heuristic search, in two numbers on one screen.
+The second half of that recording is the part worth pausing on. Dijkstra and
+A\* run on the *same* map and find the *same* route — 32 tiles, cost 39 — but
+Dijkstra expands 256 of 448 cells and A\* expands 113. That is the argument for
+heuristic search in two numbers on one screen, and it works because changing
+algorithm deliberately keeps the input fixed.
 
 ## Install
 
@@ -98,9 +47,6 @@ cargo install --path .
 | `+` `-` | grow / shrink |
 | `?` | all keys |
 | `q` | quit |
-
-Changing algorithm deliberately keeps the same input, so the counts of two
-algorithms are a direct measurement rather than two unrelated runs.
 
 In edit mode the arrows move a cursor, `space` cycles open → rough → wall, and
 `s` / `g` move the endpoints. Every edit re-runs the search and shows the
@@ -175,15 +121,46 @@ they are different routes.
 It should look right on a modern terminal and stay readable over SSH on
 something ancient, so nothing is assumed. Colour depth and UTF-8 support are
 detected once at startup, [`NO_COLOR`](https://no-color.org) is honoured, and
-every glyph and colour decision routes through one `Theme`:
+every glyph and colour decision routes through one `Theme`.
 
-- Eighth-block bars degrade to an ASCII ramp, box-drawing borders to `+-|`.
-- In monochrome the sorting bar state comes through as reverse and dim video,
-  and a grid cell's second column becomes a status marker.
-- The sidebar is dropped on a narrow terminal and the scrubber on a short one, in that order, because the visualization is the point.
-- Colour avoids the red/green pairing that red-green colourblind viewers cannot
-  separate: settled is green, active is amber. The magnitude ramp is a single
-  blue-to-cyan hue, so it reads by lightness rather than by hue alone.
+Here is `--ascii` on the same map. With colour, the terrain glyph fills both
+columns of a cell and colour carries the search state; with no colour to spend,
+terrain moves to the first column and search state to the second — `#` wall,
+`:` rough, `.` open, then `+` frontier, `-` settled, `*` route:
+
+```
+.-# # # # .-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-:-:+: : # # |  ALGORITHM
+.-# # # # .-.-.-.-.-.-.-:-.-.-.-.-.-.-.-.-.-.-.-.-.-:-:-:-:-:+# # # |  Dijkstra
+.-.-.-.-.-.-.-.-.-.-.-.-:-:-.-:-.-.-.-.-.-.-.-.-.-.-:-:-.-.-:-# # # |  step    2,686 / 2,686
+.-.-.-.-.-.-.-.-.-.-.-.-:-:-:-:-# # # .-.-.-.-.-.-:-:-:-.-.-.-# # # |
+# .-.-.-.-# .-.-.-.-.-.-.-:-:-:-# # # .-.-.-.-.-.-:-:-.-.-# :-:+: # |  COMPLEXITY
+# .-:-.-# # .-.-.-.-.-.-.-.-.-# # .-.-.*.*.*.*.-.-.-.-.-.-:-:-:+: # |  best    O(1)
+# :-:-.-.-# .-.-.-.-.-.-.-.-.-.-.-.-.-.*# # .*.*.*.-.-.-.-.-:-:+: : |  average O(V log V)
+:-:-:-:-# # .-.-.-.-.-.-.-.-.-.-.-.*.*.*:-# :-:-.*.-.-.-.-.-.-.-:+. |  worst   O(V log V)
+:-.-:-:-# .*.*.*.*.*.*.*.*.*.*.*.*.*:-:-:-# :-:-.*.*.*.*.*.*.*.*.-.+|  space   O(V)
+.-S*.*:*:*:*:-.-.-# # # # .-.-.-.-.-:-:-:-# :-:-:-:-.-.-.-.-# .*G*. |  cheapest route, blind
+.-.-:-:-:-:-:-.-.-.-.-# # # .-.-.-.-:-:-:-:-:-:-:-:-.-.-.-.-# # . : |
+.-.-:-.-.-:-:-:-.-.-.-.-# # # .-# # :-:-:-# # # .-:-.-.-:-:+: : : : |  SEARCH
+.-.-.-.-.-:-:-:-:-:-.-.-.-# # .-# # # # .-.-.-:-# .-:-:-:+: # : : : |  expanded  403
+.-.-.-.-.-:-:-:-:-:-.-.-.-.-.-.-# . # # .-.-.-:-.-.+.-:+: : : : : : |  examined  1,420
+.-.-# # .-:-# :-:-:-# # # .-.-.-# # # # .-.-.-:-:+: :+: : : . : : : |  relaxed   420
+# # # # :-:-# :-:-:-# # .-.-# # # . . # # # .-:+: : . . . . # # : . |  of cells  403 / 612
+# . . # :-:-:-.-:-:-# # # # # # . . . # # # .-.-:+: . : . : : : : : |
+. . . # :-:-:-.-.-.-# # # . # . . . # # # .+.-.+. : . : : : : : : : |  ROUTE
+                                                                    |  tiles     40
+====================================================================|  cost      45
+Dijkstra  *  = done  *  34x18  *  speed 3/7  *  seed 9  *  ? keys
+```
+
+The rest of the fallbacks work the same way: eighth-block bars degrade to an
+ASCII ramp, box-drawing borders to `+-|`, and in monochrome the sorting bar
+state comes through as reverse and dim video. The sidebar is dropped on a
+narrow terminal and the scrubber on a short one, in that order, because the
+visualization is the point.
+
+Colour avoids the red/green pairing that red-green colourblind viewers cannot
+separate: settled is green, active is amber. The magnitude ramp is a single
+blue-to-cyan hue, so it reads by lightness rather than by hue alone.
 
 UTF-8 is *assumed* unless something argues otherwise — no `TERM`, `TERM=dumb`,
 `TERM=linux`, or a locale naming `C`, `POSIX` or a non-UTF-8 charset. Requiring
@@ -193,13 +170,18 @@ routinely leaves `LANG` unset while running a perfectly capable terminal.
 The data is never resized to fit the terminal, so a resize mid-run cannot
 disturb a run in progress.
 
-## Status
+## Development
 
-Both modes are done: three sorts, four searches, step-through, scrubbing, live
-metrics, terrain editing. 112 tests, including property tests over both trace
-types.
+```bash
+cargo test                 # 112 tests, including property tests over both trace types
+cargo clippy --all-targets # clean at -D warnings
+vhs demo.tape              # regenerate assets/demo.gif
+```
 
-Not yet: a demo GIF, CI, and a crates.io release.
+The demo is a committed script rather than a hand-made recording, so it can be
+rebuilt after a UI change instead of re-performed. CI runs the tests on Linux,
+macOS and Windows, checks formatting and lints, and builds against the declared
+MSRV so that claim is tested rather than asserted.
 
 ## Dependencies
 
