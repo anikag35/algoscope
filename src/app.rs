@@ -218,11 +218,11 @@ impl Session for SortSession {
     }
 
     fn select_algorithm(&mut self, index: usize) {
-        if let Some(&algorithm) = sort::Algorithm::ALL.get(index) {
-            if algorithm != self.algorithm {
-                self.algorithm = algorithm;
-                self.rebuild();
-            }
+        if let Some(&algorithm) = sort::Algorithm::ALL.get(index)
+            && algorithm != self.algorithm
+        {
+            self.algorithm = algorithm;
+            self.rebuild();
         }
     }
 
@@ -385,11 +385,11 @@ impl Session for GridSession {
     }
 
     fn select_algorithm(&mut self, index: usize) {
-        if let Some(&algorithm) = search_algo::Algorithm::ALL.get(index) {
-            if algorithm != self.algorithm {
-                self.algorithm = algorithm;
-                self.rebuild();
-            }
+        if let Some(&algorithm) = search_algo::Algorithm::ALL.get(index)
+            && algorithm != self.algorithm
+        {
+            self.algorithm = algorithm;
+            self.rebuild();
         }
     }
 
