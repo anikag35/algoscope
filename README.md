@@ -70,7 +70,7 @@ whole argument for heuristic search, in two numbers on one screen.
 
 ## Install
 
-From source, which needs a Rust toolchain (1.85 or newer):
+From source, which needs a Rust toolchain (1.88 or newer):
 
 ```bash
 git clone https://github.com/anikag35/algoscope && cd algoscope && cargo run --release
